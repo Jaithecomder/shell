@@ -8,6 +8,9 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <pwd.h>
+#include <grp.h>
+#include <time.h>
 
 //misc
 void reltoabs(char * path, char * npath);

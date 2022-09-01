@@ -1,4 +1,3 @@
-
 #include "headers.h"
 
 extern char curdir[1024];
@@ -6,8 +5,10 @@ extern char olddir[1024];
 extern char homedir[1024];
 extern char absdir[1024];
 
-int hcmp(const char * a, const char * b)
+int hcmp(const void * _a, const void * _b)
 {
+    const char * a = * (const char **) _a;
+    const char * b = * (const char **) _b;
     int x = 0, y = 0;
     if(a[0] == '.')
     {
@@ -20,6 +21,14 @@ int hcmp(const char * a, const char * b)
     return strcasecmp(&a[x], &b[y]);
 }
 
+
+int ccmp(const void * _a, const void * _b)
+{
+    const char * a = * (const char **) _a;
+    const char * b = * (const char **) _b;
+    return strcasecmp(a, b);
+}
+
 void ls(char * cmd)
 {
     char * command = strtok(cmd, " \t\n");
@@ -28,18 +37,18 @@ void ls(char * cmd)
     char * str = strtok(NULL, " \t\n");
     while(str != NULL)
     {
-        if(strncmp(str, "-a", 2) == 0)
+        if(strncmp(str, "-la", 3) == 0 || strncmp(str, "-al", 3) == 0)
+        {
+            l = 1;
+            a = 1;
+        }
+        else if(strncmp(str, "-a", 2) == 0)
         {
             a = 1;
         }
         else if(strncmp(str, "-l", 2) == 0)
         {
             l = 1;
-        }
-        else if(strncmp(str, "-la", 3) == 0 || strncmp(str, "-al", 3) == 0)
-        {
-            l = 1;
-            a = 1;
         }
         else
         {
@@ -114,10 +123,11 @@ void ls(char * cmd)
         {
             list(flist[j], l);
         }
+        printf("\n");
     }
 
-    qsort(files, f, 1024, strcasecmp);
-    qsort(dirs, d, 1024, strcasecmp);
+    qsort(files, f, 1024, ccmp);
+    qsort(dirs, d, 1024, ccmp);
 
     for(int i = 0; i<f; i++)
     {
@@ -163,7 +173,7 @@ void ls(char * cmd)
         {
             list(flist[j], l);
         }
-        printf("\n");
+        printf("\n\n");
     }
 }
 
@@ -174,5 +184,129 @@ void list(char * fname, int l)
     {
         printf("%s\n", fname);
         return;
+    }
+    else if(l == 1)
+    {
+        char npath[1024];
+        reltoabs(fname, npath);
+        struct stat file;
+        stat(npath, &file);
+        if(S_ISREG(file.st_mode))
+        {
+            printf("-");
+        }
+        else if(S_ISBLK(file.st_mode))
+        {
+            printf("b");
+        }
+        else if(S_ISCHR(file.st_mode))
+        {
+            printf("c");
+        }
+        else if(S_ISDIR(file.st_mode))
+        {
+            printf("d");
+        }
+        else if(S_ISLNK(file.st_mode))
+        {
+            printf("l");
+        }
+        else if(S_ISFIFO(file.st_mode))
+        {
+            printf("p");
+        }
+        else if(S_ISSOCK(file.st_mode))
+        {
+            printf("SOCK");
+        }
+        else
+        {
+            printf("?");
+        }
+        if((file.st_mode & S_IRUSR) != 0)
+        {
+            printf("r");
+        }
+        else
+        {
+            printf("-");
+        }
+        if((file.st_mode & S_IWUSR) != 0)
+        {
+            printf("w");
+        }
+        else
+        {
+            printf("-");
+        }
+        if((file.st_mode & S_IXUSR) != 0)
+        {
+            printf("x");
+        }
+        else
+        {
+            printf("-");
+        }
+        if((file.st_mode & S_IRGRP) != 0)
+        {
+            printf("r");
+        }
+        else
+        {
+            printf("-");
+        }
+        if((file.st_mode & S_IWGRP) != 0)
+        {
+            printf("w");
+        }
+        else
+        {
+            printf("-");
+        }
+        if((file.st_mode & S_IXGRP) != 0)
+        {
+            printf("x");
+        }
+        else
+        {
+            printf("-");
+        }
+        if((file.st_mode & S_IROTH) != 0)
+        {
+            printf("r");
+        }
+        else
+        {
+            printf("-");
+        }
+        if((file.st_mode & S_IWOTH) != 0)
+        {
+            printf("w");
+        }
+        else
+        {
+            printf("-");
+        }
+        if((file.st_mode & S_IXOTH) != 0)
+        {
+            printf("x");
+        }
+        else
+        {
+            printf("-");
+        }
+        printf(" ");
+        printf("%2lu ", file.st_nlink);
+        struct passwd * pwd;
+        pwd = getpwuid(file.st_uid);
+        printf("%s ", pwd->pw_name);
+        struct group * grp;
+        grp = getgrgid(file.st_gid);
+        printf("%s ", grp->gr_name);
+        printf("%7ld ", file.st_size);
+        char t[1024];
+        strftime(t, 1024, "%h %d %R", localtime(&file.st_mtime));
+        printf("%s ", t);
+        printf("%s\n", fname);
     }
 }
