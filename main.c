@@ -1,4 +1,3 @@
-#include "prompt.h"
 #include "headers.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,10 +12,12 @@ char homedir[1024];
 char absdir[1024];
 char un[1024];
 char hn[1024];
+char hist[20][1024];
+char hsize = 0;
 
 void fx(char * str)
 {
-    // printf("%s\n", str);
+    addhist(str);
     char str1[1024];
     strcpy(str1, str);
     char * command = strtok(str, " \t\n");
@@ -39,6 +40,10 @@ void fx(char * str)
     else if(strcmp(command, "ls") == 0)
     {
         ls(str1);
+    }
+    else if(strcmp(command, "history") == 0)
+    {
+        phist(str1);
     }
     else
     {

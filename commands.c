@@ -5,6 +5,19 @@ extern char olddir[1024];
 extern char homedir[1024];
 extern char absdir[1024];
 
+char * getname(char * f)
+{
+    int n = strlen(f);
+    for(int i = n-1; i>=0; i++)
+    {
+        if(f[i] == '/')
+        {
+            return &f[i+1];
+        }
+    }
+    return f;
+}
+
 void reltoabs(char * path, char * npath)
 {
     if(path[0] == '~')
@@ -42,7 +55,7 @@ void cd(char * cmd)
         printf("cd: too many arguments\n");
         return;
     }
-    if(strcmp(str1, "~") == 0 || str1 == NULL)
+    if(str1 == NULL || strcmp(str1, "~") == 0)
     {
         getcwd(olddir, 1024);
         chdir(homedir);
