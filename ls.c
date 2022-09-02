@@ -54,17 +54,16 @@ void ls(char * cmd)
         {
             if(d >= 200 || f >= 200)
             {
-                printf("ls: too many arguments: (max limit: 200)");
+                printf("ls: too many arguments: (max limit: 200)\n");
                 return;
             }
             struct stat finfo;
             reltoabs(str, npath);
             if(lstat(npath, &finfo) < 0)
             {
-                perror("ls");
-                return;
+                printf("ls: cannot access '%s': No such file or directory\n\n", str);
             }
-            if(S_ISDIR(finfo.st_mode))
+            else if(S_ISDIR(finfo.st_mode))
             {
                 strcpy(dirs[d], str);
                 d++;
@@ -79,9 +78,9 @@ void ls(char * cmd)
                 if(str[0] == '-')
                 {
                     printf("ls: invalid option -- '%c'\n", str[1]);
+                    return;
                 }
-                printf("ls: cannot access'%s': No such file or directory\n", str);
-                return;
+                printf("ls: cannot access '%s': No such file or directory\n", str);
             }
         }
         str = strtok(NULL, " \t\n");
@@ -206,12 +205,20 @@ void ls(char * cmd)
 
 void list(char * fname, int l, char * dir)
 {
-    char npath[1024];
-    strcpy(npath, dir);
-    strcat(npath, "/");
-    strcat(npath, fname);
     struct stat file;
-    lstat(npath, &file);
+    char npath[1024];
+    if(strcmp(dir, "") == 0)
+    {
+        strcpy(npath, fname);
+        lstat(npath, &file);
+    }
+    else
+    {
+        strcpy(npath, dir);
+        strcat(npath, "/");
+        strcat(npath, fname);
+        lstat(npath, &file);
+    }
     if(l == 0)
     {
         if(S_ISDIR(file.st_mode))
@@ -222,7 +229,7 @@ void list(char * fname, int l, char * dir)
         {
             printf(KCYN"%s\n"RST, fname);
         }
-        else if((file.st_mode & S_IXUSR) != 0)
+        else if((file.st_mode & S_IXUSR) != 0 || (file.st_mode & S_IXGRP) != 0 || (file.st_mode & S_IXOTH) != 0)
         {
             printf(KCYN"%s\n"RST, fname);
         }
@@ -368,7 +375,7 @@ void list(char * fname, int l, char * dir)
             {
                 printf(KBLU"%s\n"RST, fname);
             }
-            else if((file.st_mode & S_IXUSR) != 0)
+            else if((file.st_mode & S_IXUSR) != 0 || (file.st_mode & S_IXGRP) != 0 || (file.st_mode & S_IXOTH) != 0)
             {
                 printf(KCYN"%s\n"RST, fname);
             }
