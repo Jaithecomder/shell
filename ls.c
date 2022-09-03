@@ -4,29 +4,29 @@ extern char curdir[1024];
 extern char olddir[1024];
 extern char homedir[1024];
 extern char absdir[1024];
+extern int err;
 
 int hcmp(const void * _a, const void * _b)
 {
     const char * a = (const char *) _a;
     const char * b = (const char *) _b;
     int x = 0, y = 0;
-    while(a[x] == '.')
+    while(a[x] == '.' || a[x] == '/')
     {
         x++;
     }
-    while(b[y] == '.')
+    while(b[y] == '.' || b[y] == '/')
     {
         y++;
     }
-    return strcasecmp(&a[x], &b[y]);
-}
-
-
-int ccmp(const void * _a, const void * _b)
-{
-    const char * a =  (const char *) _a;
-    const char * b =  (const char *) _b;
-    return strcasecmp(a, b);
+    if(strcasecmp(&a[x], &b[y]) != 0)
+    {
+        return strcasecmp(&a[x], &b[y]);
+    }
+    else
+    {
+        return x - y;
+    }
 }
 
 void ls(char * cmd)
@@ -54,14 +54,15 @@ void ls(char * cmd)
         {
             if(d >= 200 || f >= 200)
             {
-                printf("ls: too many arguments: (max limit: 200)\n");
+                printf(KRED"ls: too many arguments: (max limit: 200)\n"RST);
+                err = 1;
                 return;
             }
             struct stat finfo;
             reltoabs(str, npath);
             if(lstat(npath, &finfo) < 0)
             {
-                printf("ls: cannot access '%s': No such file or directory\n\n", str);
+                printf(KRED"ls: cannot access '%s': No such file or directory\n\n"RST, str);
             }
             else if(S_ISDIR(finfo.st_mode))
             {
@@ -70,17 +71,18 @@ void ls(char * cmd)
             }
             else if(S_ISREG(finfo.st_mode) || S_ISCHR(finfo.st_mode) || S_ISBLK(finfo.st_mode) || S_ISFIFO(finfo.st_mode) || S_ISLNK(finfo.st_mode) || S_ISSOCK(finfo.st_mode))
             {
-                strcpy(files[f], str);
+                reltoabs(str, files[f]);
                 f++;
             }
             else
             {
                 if(str[0] == '-')
                 {
-                    printf("ls: invalid option -- '%c'\n", str[1]);
+                    printf(KRED"ls: invalid option -- '%c'\n"RST, str[1]);
+                    err = 1;
                     return;
                 }
-                printf("ls: cannot access '%s': No such file or directory\n", str);
+                printf(KRED"ls: cannot access '%s': No such file or directory\n"RST, str);
             }
         }
         str = strtok(NULL, " \t\n");
@@ -96,7 +98,11 @@ void ls(char * cmd)
         DIR * directory = opendir(dirname);
         if(directory == NULL)
         {
-            perror("ls");
+            printf(KRED"ls: cannot open '%s': "RST, dirname);
+            fflush(stdout);
+            perror("");
+            err = 1;
+            return;
         }
         e = readdir(directory);
         int bl = 0;
@@ -138,8 +144,8 @@ void ls(char * cmd)
         printf("\n");
     }
 
-    qsort(files, f, 1024, ccmp);
-    qsort(dirs, d, 1024, ccmp);
+    qsort(files, f, 1024, hcmp);
+    qsort(dirs, d, 1024, hcmp);
     
     for(int i = 0; i<f; i++)
     {
@@ -159,7 +165,9 @@ void ls(char * cmd)
         DIR * directory = opendir(npath);
         if(directory == NULL)
         {
-            perror("ls");
+            printf(KRED"ls: cannot open '%s': "RST, dirs[i]);
+            fflush(stdout);
+            perror("");
         }
         e = readdir(directory);
         int bl = 0;
@@ -360,12 +368,14 @@ void list(char * fname, int l, char * dir)
         if(S_ISLNK(file.st_mode))
         {
             char flink[1024];
-            if(readlink(npath, flink, 1024) == -1)
+            int bs = readlink(npath, flink, 1024);
+            if(bs == -1)
             {
-                printf("Invalid link: '%s'\n", fname);
+                printf(KRED"Invalid link: '%s'\n"RST, fname);
             }
             else
             {
+                flink[bs] = '\0';
                 printf(KCYN"%s"RST"->"KBLU"%s\n"RST, fname, flink);
             }
         }

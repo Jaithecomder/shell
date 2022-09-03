@@ -6,7 +6,9 @@
 - **echo** - single line strings (quotes not implemented)
 - **pwd** - prints absolute path of current working directory
 - **ls** - lists out all files and directories (`-a` to include hidden files/directories, `-l` to print file/directory information)
-- **history** - prints last 10 commands
+- **discover** - To search for an item (enclosed in `""`) or print out all items within a directory ('-d' to only print directories, '-f' to only print files)
+- **history** - prints last 10 commands (stored in "/tmp" directory)
+- **pinfo** - prints process information
 - Multiple commands can be passed in one line separated by `;` or `&`
 - Commands succeeded by `&` will run in background
 
@@ -33,7 +35,19 @@
 
 - Invalid file or directory name
 - More than 200 files/directories given as arguments
+- Invalid flags
+
+### discovery
+
+- Can have only one source directory
+- Can have only one target source
+- Invalid source directory
+- Invalid flags
 
 ### history
 
 - Any arguments present
+
+### pinfo
+- More than one argument
+- Invalid PID
