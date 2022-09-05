@@ -13,6 +13,8 @@
 #include <time.h>
 #include <fcntl.h>
 #include <sys/wait.h>
+#include <signal.h>
+#include <time.h>
 
 #define RST  "\x1B[0m"
 #define KRED  "\x1B[31m"
@@ -26,9 +28,25 @@
 #define KBGR  "\x1B[92m"
 #define KBBL  "\x1B[94m"
 
+#define CLEAR "\x1b[2J\x1b[H"
+
+#define SIZE 4096
+#define FNSIZE 256
+
+struct list
+{
+    char cmd[SIZE];
+    int pid;
+    struct list * nxt;
+};
+
 //misc
 void reltoabs(char * path, char * npath);
 char * getname(char * f);
+void bgend(int sig, siginfo_t * info, void * ucontext);
+void insertlist(char * cmd, int pid);
+void deletelist(int pid);
+char * getnamelist(int pid);
 
 // cd (commands)
 void cd(char * cmd);
@@ -39,6 +57,9 @@ void echo(char * cmd);
 
 //pwd (commands)
 void pwd(char * cmd);
+
+//clear (commands)
+void clear(char * cmd);
 
 //ls
 void ls(char * cmd);

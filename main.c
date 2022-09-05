@@ -1,30 +1,35 @@
 #include "headers.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include <sys/utsname.h>
 #include <string.h>
 #include <errno.h>
 
-char curdir[1024];
-char olddir[1024];
-char homedir[1024];
-char absdir[1024];
+char curdir[SIZE];
+char olddir[SIZE];
+char homedir[SIZE];
+char absdir[SIZE];
 char un[1024];
 char hn[1024];
-char hist[20][1024];
+char hist[20][SIZE];
 int hsize = 0;
 int err = 0;
+time_t ti = 0;
+
+struct list head;
 
 void fx(char * str)
 {
-    char str1[1024];
+    char str1[SIZE];
     strcpy(str1, str);
     char * command = strtok(str, " \t\n");
     if(command == NULL)
     {
         return;
     }
+    err = 0;
     if(strcmp(command, "cd") == 0)
     {
         cd(str1);
@@ -53,12 +58,16 @@ void fx(char * str)
     {
         pinfo(str1);
     }
+    else if(strcmp(command, "clear") == 0)
+    {
+        clear(str1);
+    }
     else
     {
-        int f = fork();          // since execve switches to new process and ends current one
+        pid_t f = fork();          // since execve switches to new process and ends current one
         if(f == 0)
         {
-            char excmd[1024];
+            char excmd[SIZE];
             strcpy(excmd, str1);
             char *argv[200];
             int argc = 0;
@@ -77,7 +86,11 @@ void fx(char * str)
         }
         else
         {
+            time_t t1, t2;
+            t1 = time(NULL);
             waitpid(f, NULL, 0);
+            t2 = time(NULL);
+            ti = t2 - t1;
         }
     }
     return;
@@ -85,7 +98,7 @@ void fx(char * str)
 
 void bg(char * str)
 {
-    char str1[1024];
+    char str1[SIZE];
     strcpy(str1, str);
     char * command = strtok(str, " \t\n");
     if(command == NULL)
@@ -95,7 +108,7 @@ void bg(char * str)
     int f = fork();
     if(f == 0)
     {
-        char excmd[1024];
+        char excmd[SIZE];
         strcpy(excmd, str1);
         char *argv[200];
         int argc = 0;
@@ -108,14 +121,23 @@ void bg(char * str)
         int e = execve(command, argv, NULL);
         if(e == -1)
         {
-            printf(KRED"shell: command not found: %s\n"RST, command);
+            printf(KRED"\nshell: command not found: %s"RST, command);
+            fflush(stdout);
             err = 1;
+            exit(-1);
         }
+    }
+    else
+    {
+        insertlist(str, f);
+        printf("[%d] %d\n", head.pid, f);
     }
 }
 
 int main()
 {
+    head.nxt = NULL;
+    head.pid = 0;
     getlogin_r(un, 1024);
     if(errno < 0)
     {
@@ -133,6 +155,11 @@ int main()
     }
     strcpy(olddir, homedir);
     strcpy(absdir, homedir);
+    struct sigaction na;
+    sigemptyset(&na.sa_mask);
+    na.sa_flags = SA_RESTART | SA_SIGINFO;
+    na.sa_sigaction = bgend;
+    sigaction(SIGCHLD, &na, NULL);
     while (1)
     {
         rel(absdir, curdir);

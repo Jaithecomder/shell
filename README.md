@@ -9,6 +9,7 @@
 - **discover** - To search for an item (enclosed in `""`) or print out all items within a directory ('-d' to only print directories, '-f' to only print files)
 - **history** - prints last 10 commands (stored in "/tmp" directory)
 - **pinfo** - prints process information
+- **clear** - clear all previous i/o and sets cursot to top of window
 - Multiple commands can be passed in one line separated by `;` or `&`
 - Commands succeeded by `&` will run in background
 
@@ -51,3 +52,6 @@
 ### pinfo
 - More than one argument
 - Invalid PID
+
+### clear
+- Any arguments present
