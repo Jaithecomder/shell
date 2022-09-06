@@ -15,6 +15,7 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <time.h>
+#include <termios.h>
 
 #define RST  "\x1B[0m"
 #define KRED  "\x1B[31m"

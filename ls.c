@@ -1,9 +1,9 @@
 #include "headers.h"
 
-extern char curdir[1024];
-extern char olddir[1024];
-extern char homedir[1024];
-extern char absdir[1024];
+extern char curdir[SIZE];
+extern char olddir[SIZE];
+extern char homedir[SIZE];
+extern char absdir[SIZE];
 extern int err;
 
 int hcmp(const void * _a, const void * _b)
@@ -32,7 +32,7 @@ int hcmp(const void * _a, const void * _b)
 void ls(char * cmd)
 {
     char * command = strtok(cmd, " \t\n");
-    char dirs[200][1024], files[200][1024], npath[1024];
+    char dirs[200][SIZE], files[200][SIZE], npath[SIZE];
     int a = 0, l = 0, d = 0, f = 0;
     char * str = strtok(NULL, " \t\n");
     while(str != NULL)
@@ -54,7 +54,7 @@ void ls(char * cmd)
         {
             if(d >= 200 || f >= 200)
             {
-                printf(KRED"ls: too many arguments: (max limit: 200)\n"RST);
+                fprintf(stderr, KRED"ls: too many arguments: (max limit: 200)\n"RST);
                 err = 1;
                 return;
             }
@@ -62,7 +62,7 @@ void ls(char * cmd)
             reltoabs(str, npath);
             if(lstat(npath, &finfo) < 0)
             {
-                printf(KRED"ls: cannot access '%s': No such file or directory\n\n"RST, str);
+                fprintf(stderr, KRED"ls: cannot access '%s': No such file or directory\n\n"RST, str);
             }
             else if(S_ISDIR(finfo.st_mode))
             {
@@ -78,11 +78,11 @@ void ls(char * cmd)
             {
                 if(str[0] == '-')
                 {
-                    printf(KRED"ls: invalid option -- '%c'\n"RST, str[1]);
+                    fprintf(stderr, KRED"ls: invalid option -- '%c'\n"RST, str[1]);
                     err = 1;
                     return;
                 }
-                printf(KRED"ls: cannot access '%s': No such file or directory\n"RST, str);
+                fprintf(stderr, KRED"ls: cannot access '%s': No such file or directory\n"RST, str);
             }
         }
         str = strtok(NULL, " \t\n");
@@ -90,16 +90,15 @@ void ls(char * cmd)
 
     if( f == 0 && d == 0)
     {
-        char dirname[1024];
-        getcwd(dirname, 1024);
-        char  flist[200][1024];
+        char dirname[SIZE];
+        getcwd(dirname, SIZE);
+        char  flist[SIZE][FNSIZE];
         int ind = 0;
         struct dirent * e;
         DIR * directory = opendir(dirname);
         if(directory == NULL)
         {
-            printf(KRED"ls: cannot open '%s': "RST, dirname);
-            fflush(stdout);
+            fprintf(stderr, KRED"ls: cannot open '%s': "RST, dirname);
             perror("");
             err = 1;
             return;
@@ -108,8 +107,8 @@ void ls(char * cmd)
         int bl = 0;
         while(e != NULL)
         {
-            char spath[1024];
-            getcwd(spath, 1024);
+            char spath[SIZE];
+            getcwd(spath, SIZE);
             strcat(spath, "/");
             strcat(spath, e->d_name);
             struct stat temp;
@@ -132,7 +131,7 @@ void ls(char * cmd)
             e = readdir(directory);
         }
         closedir(directory);
-        qsort(flist, ind, 1024, hcmp);
+        qsort(flist, ind, FNSIZE, hcmp);
         if(l == 1)
         {
             printf("total %d\n", bl/2);
@@ -144,8 +143,8 @@ void ls(char * cmd)
         printf("\n");
     }
 
-    qsort(files, f, 1024, hcmp);
-    qsort(dirs, d, 1024, hcmp);
+    qsort(files, f, SIZE, hcmp);
+    qsort(dirs, d, SIZE, hcmp);
     
     for(int i = 0; i<f; i++)
     {
@@ -158,7 +157,7 @@ void ls(char * cmd)
         {
             printf("%s:\n", dirs[i]);
         }
-        char  flist[200][1024];
+        char  flist[SIZE][FNSIZE];
         int ind = 0;
         struct dirent * e;
         reltoabs(dirs[i], npath);
@@ -173,8 +172,8 @@ void ls(char * cmd)
         int bl = 0;
         while(e != NULL)
         {
-            char spath[1024];
-            getcwd(spath, 1024);
+            char spath[SIZE];
+            getcwd(spath, SIZE);
             strcat(spath, "/");
             strcat(spath, e->d_name);
             struct stat temp;
@@ -197,7 +196,7 @@ void ls(char * cmd)
             e = readdir(directory);
         }
         closedir(directory);
-        qsort(flist, ind, 1024, hcmp);
+        qsort(flist, ind, FNSIZE, hcmp);
         if(l == 1)
         {
             printf("total %d\n", bl/2);
@@ -214,7 +213,7 @@ void ls(char * cmd)
 void list(char * fname, int l, char * dir)
 {
     struct stat file;
-    char npath[1024];
+    char npath[SIZE];
     if(strcmp(dir, "") == 0)
     {
         strcpy(npath, fname);
@@ -362,13 +361,13 @@ void list(char * fname, int l, char * dir)
         grp = getgrgid(file.st_gid);
         printf("%s ", grp->gr_name);
         printf("%7ld ", file.st_size);
-        char t[1024];
-        strftime(t, 1024, "%h %d %R", localtime(&file.st_mtime));
+        char t[FNSIZE];
+        strftime(t, FNSIZE, "%h %d %R", localtime(&file.st_mtime));
         printf("%s ", t);
         if(S_ISLNK(file.st_mode))
         {
-            char flink[1024];
-            int bs = readlink(npath, flink, 1024);
+            char flink[SIZE];
+            int bs = readlink(npath, flink, SIZE);
             if(bs == -1)
             {
                 printf(KRED"Invalid link: '%s'\n"RST, fname);

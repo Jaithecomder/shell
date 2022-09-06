@@ -7,8 +7,12 @@ extern char curdir[SIZE];
 extern char olddir[SIZE];
 extern char homedir[SIZE];
 extern char absdir[SIZE];
+extern char un[FNSIZE];
+extern char hn[FNSIZE];
 extern int err;
 extern struct list head;
+extern pid_t sh_pgid;
+extern struct termios term;
 
 void insertlist(char * cmd, int pid)
 {
@@ -65,14 +69,14 @@ void deletelist(int pid)
 char * getnamelist(int pid)
 {
     struct list * temp = head.nxt;
+    char name[SIZE];
     if(temp == NULL)
     {
         return NULL;
     }
     if(temp->pid == pid)
     {
-        head.nxt = head.nxt->nxt;
-        free(temp);
+        strcpy(name, temp->cmd);
         return temp->cmd;
     }
     while(temp->nxt != NULL)
@@ -80,8 +84,6 @@ char * getnamelist(int pid)
         if(temp->nxt->pid == pid)
         {
             struct list * t = temp->nxt;
-            temp->nxt = temp->nxt->nxt;
-            free(t);
             return t->cmd;
         }
         temp = temp->nxt;
@@ -95,7 +97,7 @@ void clear(char * cmd)
     char * str = strtok(NULL, " \t\n");
     if(str != NULL)
     {
-        printf(KRED"clear: too many arguments\n"RST);
+        fprintf(stderr, KRED"clear: too many arguments\n"RST);
         return;
     }
     printf(CLEAR);
@@ -103,7 +105,6 @@ void clear(char * cmd)
 
 void bgend(int sig, siginfo_t * info, void * ucontext)
 {
-    head.pid--;
     char * temp = getnamelist(info->si_pid);
     if(temp == NULL)
     {
@@ -142,7 +143,13 @@ void bgend(int sig, siginfo_t * info, void * ucontext)
     {
         strcpy(exstat, "was continued.");
     }
-    printf("\n%s with pid = %d %s\n", cmd, info->si_pid, exstat);
+    printf("\n[%d] %s with pid = %d %s\n", head.pid, cmd, info->si_pid, exstat);
+    if(sh_pgid == tcgetpgrp(STDIN_FILENO))
+    {
+        prompt(un, hn, curdir);
+        fflush(stdout);
+    }
+    tcsetattr(STDIN_FILENO, 0, &term);
     return;
 }
 
@@ -158,11 +165,11 @@ void pinfo(char * cmd)
         struct stat finfo;
         if(lstat(path, &finfo) < 0)
         {
-            printf(KRED"pinfo: Invalid pid\n"RST);
+            fprintf(stderr, KRED"pinfo: Invalid pid\n"RST);
             err = 1;
             return;
         }
-        char p1[1024], p2[1024], p3[1024];
+        char p1[SIZE], p2[SIZE], p3[SIZE];
         strcpy(p1, path);
         strcpy(p2, path);
         strcpy(p3, path);
@@ -174,13 +181,12 @@ void pinfo(char * cmd)
         FILE * f2 = fopen(p2, "r");
         if(f1 == NULL || f2 == NULL)
         {
-            printf(KRED"pinfo: error reading information: "RST);
-            fflush(stdout);
+            fprintf(stderr, KRED"pinfo: error reading information: "RST);
             perror("");
             err = 1;
             return;
         }
-        char status, exec[1024], temp[1024];
+        char status, exec[SIZE], temp[FNSIZE];
         int ppid, pgrp, ss, tt, tgid;
         fscanf(f1, "%d %s %c %d %d %d %d %d", &p, temp, &status, &ppid, &pgrp, &ss, &tt, &tgid);
         fscanf(f2, "%d", &mem);
@@ -191,17 +197,16 @@ void pinfo(char * cmd)
             printf("+");
         }
         printf("\nmemory : %d\n", mem);
-        int bs = readlink(p3, exec, 1024);
+        int bs = readlink(p3, exec, SIZE);
         if(bs == -1)
         {
-            printf(KRED"pinfo: cannot access executable path:"RST);
-            fflush(stdout);
+            fprintf(stderr, KRED"pinfo: cannot access executable path:"RST);
             perror("");
         }
         else
         {
             exec[bs] = '\0';
-            char r[1024];
+            char r[SIZE];
             rel(exec, r);
             printf("executable path : %s\n", r);
         }
@@ -213,7 +218,7 @@ void pinfo(char * cmd)
         char * str2 = strtok(NULL, " \t\n");
         if(str2 != NULL)
         {
-            printf(KRED"pinfo: too many arguments\n"RST);
+            fprintf(stderr, KRED"pinfo: too many arguments\n"RST);
             err = 1;
             return;
         }
@@ -221,13 +226,13 @@ void pinfo(char * cmd)
         {
             pid_t p;
             int mem;
-            char p1[1024], p2[1024], p3[1024];
+            char p1[SIZE], p2[SIZE], p3[SIZE];
             strcpy(p1, "/proc/");
             strcat(p1, str1);
             struct stat finfo;
             if(lstat(p1, &finfo) < 0)
             {
-                printf(KRED"pinfo: Invalid pid\n"RST);
+                fprintf(stderr, KRED"pinfo: Invalid pid\n"RST);
                 err = 1;
                 return;
             }
@@ -240,34 +245,32 @@ void pinfo(char * cmd)
             FILE * f2 = fopen(p2, "r");
             if(f1 == NULL || f2 == NULL)
             {
-                printf(KRED"pinfo: error reading information: "RST);
-                fflush(stdout);
+                fprintf(stderr, KRED"pinfo: error reading information: "RST);
                 perror("");
                 err = 1;
                 return;
             }
-            char status, exec[1024], temp[1024];
+            char status, exec[SIZE], temp[SIZE];
             int ppid, pgrp, ss, tt, tgid;
             fscanf(f1, "%d %s %c %d %d %d %d %d", &p, temp, &status, &ppid, &pgrp, &ss, &tt, &tgid);
             fscanf(f2, "%d", &mem);
-            printf("pid : %d\n %d %d\n", p, pgrp, tgid);
+            printf("pid : %d\n", p);
             printf("process status : %c", status);
             if(pgrp == tgid)
             {
                 printf("+");
             }
             printf("\nmemory : %d\n", mem);
-            int bs = readlink(p3, exec, 1024);
+            int bs = readlink(p3, exec, SIZE);
             if(bs == -1)
             {
-                printf(KRED"pinfo: cannot access executable path:"RST);
-                fflush(stdout);
+                fprintf(stderr, KRED"pinfo: cannot access executable path:"RST);
                 perror("");
             }
             else
             {
                 exec[bs] = '\0';
-                char r[1024];
+                char r[SIZE];
                 rel(exec, r);
                 printf("executable path : %s\n", r);
             }
@@ -333,13 +336,13 @@ void cd(char * cmd)
     char * str2 = strtok(NULL, " \t\n");
     if(str2 != NULL)
     {
-        printf(KRED"cd: too many arguments\n"RST);
+        fprintf(stderr, KRED"cd: too many arguments\n"RST);
         err = 1;
         return;
     }
     if(str1 == NULL || strcmp(str1, "~") == 0)
     {
-        getcwd(olddir, 1024);
+        getcwd(olddir, SIZE);
         chdir(homedir);
         strcpy(absdir, homedir);
         return;
@@ -348,14 +351,14 @@ void cd(char * cmd)
     {
         chdir(olddir);
         strcpy(olddir, absdir);
-        getcwd(absdir, 1024);
+        getcwd(absdir, SIZE);
         printf("%s\n", absdir);
         return;
     }
     else if(str1[0] == '~' && str1[1] == '/')
     {
-        char tempold[1024], path[1024];
-        getcwd(tempold, 1024);
+        char tempold[SIZE], path[SIZE];
+        getcwd(tempold, SIZE);
         strcpy(path, homedir);
         strcat(path, &str1[1]);
         if(chdir(path) < 0)
@@ -364,13 +367,13 @@ void cd(char * cmd)
             return;
         }
         strcpy(olddir, tempold);
-        getcwd(absdir, 1024);
+        getcwd(absdir, SIZE);
         return;
     }
     else
     {
-        char tempold[1024];
-        getcwd(tempold, 1024);
+        char tempold[SIZE];
+        getcwd(tempold, SIZE);
         if(chdir(str1) < 0)
         {
             fprintf(stderr, KRED);
@@ -380,7 +383,7 @@ void cd(char * cmd)
             return;
         }
         strcpy(olddir, tempold);
-        getcwd(absdir, 1024);
+        getcwd(absdir, SIZE);
         return;
     }
 }
@@ -404,12 +407,12 @@ void pwd(char * cmd)
     char * str = strtok(NULL, " \t\n");
     if(str != NULL)
     {
-        printf(KRED"pwd: too many arguments\n"RST);
+        fprintf(stderr, KRED"pwd: too many arguments\n"RST);
         err = 1;
         return;
     }
-    char dir[1024];
-    getcwd(dir, 1024);
+    char dir[SIZE];
+    getcwd(dir, SIZE);
     printf("%s\n", dir);
     return;
 }

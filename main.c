@@ -11,12 +11,14 @@ char curdir[SIZE];
 char olddir[SIZE];
 char homedir[SIZE];
 char absdir[SIZE];
-char un[1024];
-char hn[1024];
+char un[FNSIZE];
+char hn[FNSIZE];
 char hist[20][SIZE];
 int hsize = 0;
 int err = 0;
 time_t ti = 0;
+pid_t sh_pgid;
+struct termios term; 
 
 struct list head;
 
@@ -67,6 +69,11 @@ void fx(char * str)
         pid_t f = fork();          // since execve switches to new process and ends current one
         if(f == 0)
         {
+            setpgrp();
+            // pid_t p = getpid();
+            // setpgid(p, p);
+            signal (SIGTTOU, SIG_DFL);
+            signal (SIGTTIN, SIG_DFL);
             char excmd[SIZE];
             strcpy(excmd, str1);
             char *argv[200];
@@ -77,20 +84,29 @@ void fx(char * str)
                 argc++;
                 argv[argc] = strtok(NULL, " \t\n");
             }
-            int e = execve(command, argv, NULL);
+            int e = execvp(command, argv);
             if(e == -1)
             {
                 printf(KRED"shell: command not found: %s\n"RST, command);
                 err = 1;
             }
+            exit(0);
         }
         else
         {
+            tcsetpgrp(STDIN_FILENO, f);
+            int wstat;
             time_t t1, t2;
             t1 = time(NULL);
-            waitpid(f, NULL, 0);
+            waitpid(f, &wstat, 0);
+            // if(wstat < 0)
+            // {
+            //     kill(f, 0);
+            // }
             t2 = time(NULL);
             ti = t2 - t1;
+            tcsetpgrp(STDIN_FILENO, sh_pgid);
+            tcsetattr(STDIN_FILENO, 0, &term);
         }
     }
     return;
@@ -98,6 +114,7 @@ void fx(char * str)
 
 void bg(char * str)
 {
+    err = 0;
     char str1[SIZE];
     strcpy(str1, str);
     char * command = strtok(str, " \t\n");
@@ -105,9 +122,14 @@ void bg(char * str)
     {
         return;
     }
-    int f = fork();
+    pid_t f = fork();
     if(f == 0)
     {
+        setpgrp();
+        signal (SIGTTOU, SIG_DFL);
+        signal (SIGTTIN, SIG_DFL);
+        // pid_t p = getpid();
+        // setpgid(p, p);
         char excmd[SIZE];
         strcpy(excmd, str1);
         char *argv[200];
@@ -118,18 +140,15 @@ void bg(char * str)
             argc++;
             argv[argc] = strtok(NULL, " \t\n");
         }
-        int e = execve(command, argv, NULL);
-        if(e == -1)
-        {
-            printf(KRED"\nshell: command not found: %s"RST, command);
-            fflush(stdout);
-            err = 1;
-            exit(-1);
-        }
+        int e = execvp(command, argv);
+        fprintf(stderr, KRED"\nshell"RST);
+        err = 1;
+        exit(-1);
     }
     else
     {
-        insertlist(str, f);
+        setpgid(f, f);
+        insertlist(command, f);
         printf("[%d] %d\n", head.pid, f);
     }
 }
@@ -138,35 +157,49 @@ int main()
 {
     head.nxt = NULL;
     head.pid = 0;
-    getlogin_r(un, 1024);
+    uid_t uid = geteuid();
+    struct passwd * pd = getpwuid(uid);
+    strcpy(un, pd->pw_name);
     if(errno < 0)
     {
-        perror("");
+        perror("shell");
     }
-    gethostname(hn, 1024);
+    gethostname(hn, FNSIZE);
     if(errno < 0)
     {
-        perror("");
+        perror("shell");
     }
-    getcwd(homedir, 1024);
+    getcwd(homedir, FNSIZE);
     if(errno < 0)
     {
-        perror("");
+        perror("shell");
     }
     strcpy(olddir, homedir);
     strcpy(absdir, homedir);
+    
+    signal (SIGTTOU, SIG_IGN);
+    signal (SIGTTIN, SIG_IGN);
+    
     struct sigaction na;
     sigemptyset(&na.sa_mask);
     na.sa_flags = SA_RESTART | SA_SIGINFO;
     na.sa_sigaction = bgend;
-    sigaction(SIGCHLD, &na, NULL);
+    if(sigaction(SIGCHLD, &na, NULL) == -1)
+    {
+        perror("sig");
+    }
+
+    sh_pgid = getpid();
+    tcsetpgrp(STDIN_FILENO, sh_pgid);
+    tcgetattr(STDIN_FILENO, &term);
+
     while (1)
     {
         rel(absdir, curdir);
         prompt(un, hn, curdir);
         // TAKE INPUT HERE
-        char input[1024], tinp[1024];
-        fgets(input, 1024, stdin);
+        char input[SIZE], tinp[SIZE];
+        fgets(input, SIZE, stdin);
         int j = 0, len = strlen(input);
         strcpy(tinp, input);
         char * tmptok = strtok(tinp, " \t\n");
