@@ -7,7 +7,7 @@
 - **pwd** - prints absolute path of current working directory
 - **ls** - lists out all files and directories (`-a` to include hidden files/directories, `-l` to print file/directory information)
 - **discover** - To search for an item (enclosed in `""`) or print out all items within a directory ('-d' to only print directories, '-f' to only print files)
-- **history** - prints last 10 commands (stored in "/tmp" directory)
+- **history** - prints last 10 commands (stored as a tempfile in "/home/[username]" directory)
 - **pinfo** - prints process information
 - **clear** - clear all previous i/o and sets cursot to top of window
 - Multiple commands can be passed in one line separated by `;` or `&`
@@ -38,7 +38,7 @@
 - More than 200 files/directories given as arguments
 - Invalid flags
 
-### discovery
+### discover
 
 - Can have only one source directory
 - Can have only one target source

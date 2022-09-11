@@ -1,7 +1,4 @@
 #include "headers.h"
-#include <errno.h>
-#include <stdio.h>
-#include <sys/wait.h>
 
 extern char curdir[SIZE];
 extern char olddir[SIZE];
@@ -14,81 +11,14 @@ extern struct list head;
 extern pid_t sh_pgid;
 extern struct termios term;
 
-void insertlist(char * cmd, int pid)
+char getstatus(pid_t pid)
 {
-    head.pid++;
-    struct list * new = (struct list *) malloc(sizeof(struct list));
-    strcpy(new->cmd, cmd);
-    new->pid = pid;
-    new->nxt = NULL;
-    if(head.nxt == NULL)
-    {
-        head.nxt = new;
-        return;
-    }
-    struct list * temp;
-    temp = head.nxt;
-    while(temp->nxt != NULL)
-    {
-        temp = temp->nxt;
-    }
-    temp->nxt = new;
-    return;
-}
-
-void deletelist(int pid)
-{
-    struct list * temp = head.nxt;
-    if(temp == NULL)
-    {
-        return;
-    }
-    if(temp->pid == pid)
-    {
-        head.nxt = head.nxt->nxt;
-        free(temp);
-        head.pid--;
-        return;
-    }
-    while(temp->nxt != NULL)
-    {
-        if(temp->nxt->pid == pid)
-        {
-            struct list * t = temp->nxt;
-            temp->nxt = temp->nxt->nxt;
-            free(t);
-            head.pid--;
-            return;
-        }
-        temp = temp->nxt;
-    }
-    return;
-}
-
-
-char * getnamelist(int pid)
-{
-    struct list * temp = head.nxt;
-    char name[SIZE];
-    if(temp == NULL)
-    {
-        return NULL;
-    }
-    if(temp->pid == pid)
-    {
-        strcpy(name, temp->cmd);
-        return temp->cmd;
-    }
-    while(temp->nxt != NULL)
-    {
-        if(temp->nxt->pid == pid)
-        {
-            struct list * t = temp->nxt;
-            return t->cmd;
-        }
-        temp = temp->nxt;
-    }
-    return NULL;
+    char path[FNSIZE];
+    sprintf(path, "/proc/%d/stat", pid);
+    FILE * fd = fopen(path, "r");
+    char temp[FNSIZE], status;
+    fscanf(fd, "%d %s %c", &pid, temp, &status);
+    return status;
 }
 
 void clear(char * cmd)
@@ -105,8 +35,8 @@ void clear(char * cmd)
 
 void bgend(int sig, siginfo_t * info, void * ucontext)
 {
-    char * temp = getnamelist(info->si_pid);
-    if(temp == NULL)
+    struct list * temp = getproclist(info->si_pid);
+    if(temp == NULL || temp->jn == -1)
     {
         return;
     }
@@ -115,21 +45,23 @@ void bgend(int sig, siginfo_t * info, void * ucontext)
         perror("error");
         return;
     }
-    char cmd[SIZE];
-    strcpy(cmd, temp);
-    deletelist(info->si_pid);
-    char exstat[30];
+    char exstat[30], cmd[SIZE];
+    strcpy(cmd, temp->cmd);
+    char * command = strtok(cmd, " \t\n");
+    int jn = temp->jn;
     if(info->si_code == CLD_EXITED)
     {
         strcpy(exstat, "has exited normally.");
+        deletelist(info->si_pid);
     }
     else if(info->si_code == CLD_KILLED)
     {
         strcpy(exstat, "was killed.");
+        deletelist(info->si_pid);
     }
     else if(info->si_code == CLD_DUMPED)
     {
-        strcpy(exstat, "terminated abnorally.");
+        strcpy(exstat, "terminated abnormally.");
     }
     else if(info->si_code == CLD_TRAPPED)
     {
@@ -138,12 +70,13 @@ void bgend(int sig, siginfo_t * info, void * ucontext)
     else if(info->si_code == CLD_STOPPED)
     {
         strcpy(exstat, "was stopped.");
+        temp->st = 0;
     }
     else if(info->si_code == CLD_CONTINUED)
     {
         strcpy(exstat, "was continued.");
     }
-    printf("\n[%d] %s with pid = %d %s\n", head.pid, cmd, info->si_pid, exstat);
+    printf("\n[%d] %s with pid = %d %s\n", jn, command, info->si_pid, exstat);
     if(sh_pgid == tcgetpgrp(STDIN_FILENO))
     {
         prompt(un, hn, curdir);
@@ -160,7 +93,7 @@ void pinfo(char * cmd)
     if(str1 == NULL)
     {
         pid_t p = getpid();
-        char path[SIZE];
+        char path[FNSIZE];
         sprintf(path, "/proc/%d", p);
         struct stat finfo;
         if(lstat(path, &finfo) < 0)
@@ -169,7 +102,7 @@ void pinfo(char * cmd)
             err = 1;
             return;
         }
-        char p1[SIZE], p2[SIZE], p3[SIZE];
+        char p1[FNSIZE], p2[FNSIZE], p3[FNSIZE];
         strcpy(p1, path);
         strcpy(p2, path);
         strcpy(p3, path);
@@ -226,7 +159,7 @@ void pinfo(char * cmd)
         {
             pid_t p;
             int mem;
-            char p1[SIZE], p2[SIZE], p3[SIZE];
+            char p1[FNSIZE], p2[FNSIZE], p3[FNSIZE];
             strcpy(p1, "/proc/");
             strcat(p1, str1);
             struct stat finfo;
@@ -250,7 +183,7 @@ void pinfo(char * cmd)
                 err = 1;
                 return;
             }
-            char status, exec[SIZE], temp[SIZE];
+            char status, exec[SIZE], temp[FNSIZE];
             int ppid, pgrp, ss, tt, tgid;
             fscanf(f1, "%d %s %c %d %d %d %d %d", &p, temp, &status, &ppid, &pgrp, &ss, &tt, &tgid);
             fscanf(f2, "%d", &mem);

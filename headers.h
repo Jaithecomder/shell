@@ -36,44 +36,73 @@
 
 struct list
 {
+    int jn;
     char cmd[SIZE];
+    int st;
     int pid;
     struct list * nxt;
 };
 
-//misc
+// run commands (main)
+void fx(char * cmd);
+void bfx(char * cmd);
+
+// misc(commands)
 void reltoabs(char * path, char * npath);
 char * getname(char * f);
 void bgend(int sig, siginfo_t * info, void * ucontext);
-void insertlist(char * cmd, int pid);
+char getstatus(pid_t pid);
+
+// bglist
+int insertlist(char * cmd, int pid);
 void deletelist(int pid);
-char * getnamelist(int pid);
+struct list * getproclist(int pid);
 
 // cd (commands)
 void cd(char * cmd);
 void rel(char * str, char * cur);
 
-//echo (commands)
+// echo (commands)
 void echo(char * cmd);
 
-//pwd (commands)
+// pwd (commands)
 void pwd(char * cmd);
 
-//clear (commands)
+// clear (commands)
 void clear(char * cmd);
 
-//ls
+// ls
 void ls(char * cmd);
 void list(char * fname, int l, char * dir);
 
-//discover
+// discover
 void discover(char * cmd);
 void dp(char * dir, int d, int f);
 void ds(char * dir, int d, int f, char * s);
 
-//history
+// history
 void addhist(char * cmd);
 void phist(char * cmd);
 
-//pinfo (commands)
+// pinfo (commands)
 void pinfo(char * cmd);
+
+// udefcom
+    // jobs
+void jobs(char * cmd);
+void inssort(struct list * temp, struct list * sort);
+
+    // sig
+void sig(char * cmd);
+int strtoint(char * str);
+
+    // fg
+void fg(char * cmd);
+
+    // bg
+void bg(char * cmd);
+
+// ioredir
+void ioredir(char * cmd);
+int oinp(char * str);
+int oout(char * str);

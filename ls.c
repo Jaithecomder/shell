@@ -33,7 +33,7 @@ void ls(char * cmd)
 {
     char * command = strtok(cmd, " \t\n");
     char dirs[200][SIZE], files[200][SIZE], npath[SIZE];
-    int a = 0, l = 0, d = 0, f = 0;
+    int a = 0, l = 0, d = 0, f = 0, arg = 0;
     char * str = strtok(NULL, " \t\n");
     while(str != NULL)
     {
@@ -52,6 +52,7 @@ void ls(char * cmd)
         }
         else
         {
+            arg++;
             if(d >= 200 || f >= 200)
             {
                 fprintf(stderr, KRED"ls: too many arguments: (max limit: 200)\n"RST);
@@ -90,6 +91,11 @@ void ls(char * cmd)
 
     if( f == 0 && d == 0)
     {
+        if(arg > 0)
+        {
+            err = 1;
+            return;
+        }
         char dirname[SIZE];
         getcwd(dirname, SIZE);
         char  flist[SIZE][FNSIZE];
@@ -205,7 +211,7 @@ void ls(char * cmd)
         {
             list(flist[j], l, npath);
         }
-        printf("\n\n");
+        printf("\n");
     }
 }
 

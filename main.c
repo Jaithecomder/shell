@@ -1,11 +1,4 @@
 #include "headers.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <sys/utsname.h>
-#include <string.h>
-#include <errno.h>
 
 char curdir[SIZE];
 char olddir[SIZE];
@@ -18,7 +11,8 @@ int hsize = 0;
 int err = 0;
 time_t ti = 0;
 pid_t sh_pgid;
-struct termios term; 
+struct termios term;
+int zen = 0;
 
 struct list head;
 
@@ -64,6 +58,22 @@ void fx(char * str)
     {
         clear(str1);
     }
+    else if(strcmp(command, "jobs") == 0)
+    {
+        jobs(str1);
+    }
+    else if(strcmp(command, "sig") == 0)
+    {
+        sig(str1);
+    }
+    else if(strcmp(command, "fg") == 0)
+    {
+        fg(str1);
+    }
+    else if(strcmp(command, "bg") == 0)
+    {
+        bg(str1);
+    }
     else
     {
         pid_t f = fork();          // since execve switches to new process and ends current one
@@ -99,10 +109,6 @@ void fx(char * str)
             time_t t1, t2;
             t1 = time(NULL);
             waitpid(f, &wstat, 0);
-            // if(wstat < 0)
-            // {
-            //     kill(f, 0);
-            // }
             t2 = time(NULL);
             ti = t2 - t1;
             tcsetpgrp(STDIN_FILENO, sh_pgid);
@@ -112,7 +118,7 @@ void fx(char * str)
     return;
 }
 
-void bg(char * str)
+void bfx(char * str)
 {
     err = 0;
     char str1[SIZE];
@@ -148,8 +154,8 @@ void bg(char * str)
     else
     {
         setpgid(f, f);
-        insertlist(command, f);
-        printf("[%d] %d\n", head.pid, f);
+        int jn = insertlist(str1, f);
+        printf("[%d] %d\n", jn, f);
     }
 }
 
@@ -211,8 +217,13 @@ int main()
         {
             continue;
         }
+        int ab = 0;
         for(int i = 0; i<len; i++)
         {
+            if(input[i] == '<' || input[i] == '>')
+            {
+                ab = 1;
+            }
             if(input[i] == ';' || input[i] == '&')
             {
                 if(j == i)
@@ -225,12 +236,18 @@ int main()
                     if(input[i] == ';')
                     {
                         input[i] = '\0';
+                        if(ab == 1)
+                        {
+                            ioredir(&input[j]);
+                            ab = 0;
+                            continue;
+                        }
                         fx(&input[j]);
                     }
                     else
                     {
                         input[i] = '\0';
-                        bg(&input[j]);
+                        bfx(&input[j]);
                     }
                     j = i+1;
                     continue;
@@ -239,7 +256,15 @@ int main()
         }
         if(j < len)
         {
-            fx(&input[j]);
+            if(ab == 1)
+            {
+                ioredir(&input[j]);
+                ab = 0;
+            }
+            else
+            {
+                fx(&input[j]);
+            }
         }
     }
 }
