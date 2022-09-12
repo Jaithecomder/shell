@@ -100,15 +100,19 @@ void fx(char * str)
                 printf(KRED"shell: command not found: %s\n"RST, command);
                 err = 1;
             }
-            exit(0);
+            exit(1);
         }
         else
         {
             tcsetpgrp(STDIN_FILENO, f);
-            int wstat;
+            int wstat = -69;
             time_t t1, t2;
             t1 = time(NULL);
             waitpid(f, &wstat, 0);
+            if(wstat != 0)
+            {
+                err = 1;
+            }
             t2 = time(NULL);
             ti = t2 - t1;
             tcsetpgrp(STDIN_FILENO, sh_pgid);
@@ -217,12 +221,12 @@ int main()
         {
             continue;
         }
-        int ab = 0;
+        int pl = 0;
         for(int i = 0; i<len; i++)
         {
-            if(input[i] == '<' || input[i] == '>')
+            if(input[i] == '|')
             {
-                ab = 1;
+                pl = 1;
             }
             if(input[i] == ';' || input[i] == '&')
             {
@@ -236,13 +240,12 @@ int main()
                     if(input[i] == ';')
                     {
                         input[i] = '\0';
-                        if(ab == 1)
+                        if(pl == 1)
                         {
-                            ioredir(&input[j]);
-                            ab = 0;
-                            continue;
+                            pipeline(&input[j]);
+                            pl = 0;
                         }
-                        fx(&input[j]);
+                        ioredir(&input[j]);
                     }
                     else
                     {
@@ -254,17 +257,14 @@ int main()
                 }
             }
         }
-        if(j < len)
+        if(j < len && input[j] != '\n')
         {
-            if(ab == 1)
+            if(pl == 1)
             {
-                ioredir(&input[j]);
-                ab = 0;
+                pipeline(&input[j]);
+                continue;
             }
-            else
-            {
-                fx(&input[j]);
-            }
+            ioredir(&input[j]);
         }
     }
 }

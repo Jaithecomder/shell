@@ -106,3 +106,7 @@ void bg(char * cmd);
 void ioredir(char * cmd);
 int oinp(char * str);
 int oout(char * str);
+int oaout(char * str);
+
+// pipeline
+void pipeline(char * cmd);
