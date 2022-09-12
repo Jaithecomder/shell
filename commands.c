@@ -82,7 +82,6 @@ void bgend(int sig, siginfo_t * info, void * ucontext)
         prompt(un, hn, curdir);
         fflush(stdout);
     }
-    tcsetattr(STDIN_FILENO, 0, &term);
     return;
 }
 

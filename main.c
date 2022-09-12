@@ -97,7 +97,7 @@ void fx(char * str)
             int e = execvp(command, argv);
             if(e == -1)
             {
-                printf(KRED"shell: command not found: %s\n"RST, command);
+                fprintf(stderr, KRED"shell: command not found: %s\n"RST, command);
                 err = 1;
             }
             exit(1);
@@ -116,7 +116,6 @@ void fx(char * str)
             t2 = time(NULL);
             ti = t2 - t1;
             tcsetpgrp(STDIN_FILENO, sh_pgid);
-            tcsetattr(STDIN_FILENO, 0, &term);
         }
     }
     return;
@@ -138,8 +137,6 @@ void bfx(char * str)
         setpgrp();
         signal (SIGTTOU, SIG_DFL);
         signal (SIGTTIN, SIG_DFL);
-        // pid_t p = getpid();
-        // setpgid(p, p);
         char excmd[SIZE];
         strcpy(excmd, str1);
         char *argv[200];
@@ -151,9 +148,12 @@ void bfx(char * str)
             argv[argc] = strtok(NULL, " \t\n");
         }
         int e = execvp(command, argv);
-        fprintf(stderr, KRED"\nshell"RST);
-        err = 1;
-        exit(-1);
+        if(e == -1)
+        {
+            fprintf(stderr, KRED"\nshell: command not found: %s"RST, command);
+            err = 1;
+        }
+        exit(1);
     }
     else
     {
@@ -201,7 +201,6 @@ int main()
 
     sh_pgid = getpid();
     tcsetpgrp(STDIN_FILENO, sh_pgid);
-    tcgetattr(STDIN_FILENO, &term);
 
     while (1)
     {
@@ -209,7 +208,11 @@ int main()
         prompt(un, hn, curdir);
         // TAKE INPUT HERE
         char input[SIZE], tinp[SIZE];
-        fgets(input, SIZE, stdin);
+        if(fgets(input, SIZE, stdin) == NULL)
+        {
+            perror("");
+            return 0;
+        }
         int j = 0, len = strlen(input);
         strcpy(tinp, input);
         char * tmptok = strtok(tinp, " \t\n");
@@ -264,7 +267,7 @@ int main()
                 pipeline(&input[j]);
                 continue;
             }
-            ioredir(&input[j]);
+            fx(&input[j]);
         }
     }
 }
