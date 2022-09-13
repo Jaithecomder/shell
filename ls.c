@@ -63,7 +63,7 @@ void ls(char * cmd)
             reltoabs(str, npath);
             if(lstat(npath, &finfo) < 0)
             {
-                fprintf(stderr, KRED"ls: cannot access '%s': No such file or directory\n\n"RST, str);
+                fprintf(stderr, KRED"ls: cannot access '%s': No such file or directory\n"RST, str);
             }
             else if(S_ISDIR(finfo.st_mode))
             {

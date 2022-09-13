@@ -29,4 +29,5 @@ void prompt(char * un, char * sn, char * cwd)
         }
         ti = 0;
     }
+    fflush(stdout);
 }

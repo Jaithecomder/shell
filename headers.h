@@ -16,6 +16,7 @@
 #include <signal.h>
 #include <time.h>
 #include <termios.h>
+#include <ctype.h>
 
 #define RST  "\x1B[0m"
 #define KRED  "\x1B[31m"
@@ -46,6 +47,11 @@ struct list
 // run commands (main)
 void fx(char * cmd);
 void bfx(char * cmd);
+
+// raw mode
+void enableRawMode();
+void disableRawMode();
+void die(const char *s);
 
 // misc(commands)
 void reltoabs(char * path, char * npath);
@@ -110,3 +116,6 @@ int oaout(char * str);
 
 // pipeline
 void pipeline(char * cmd);
+
+// autocomplete
+int autocomp(char * inp, int n, int * stat);

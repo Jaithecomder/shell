@@ -74,14 +74,17 @@ void fx(char * str)
     {
         bg(str1);
     }
+    else if(strcmp(command, "exit") == 0)
+    {
+        exit(0);
+    }
     else
     {
         pid_t f = fork();          // since execve switches to new process and ends current one
         if(f == 0)
         {
             setpgrp();
-            // pid_t p = getpid();
-            // setpgid(p, p);
+            signal (SIGINT, SIG_DFL);
             signal (SIGTTOU, SIG_DFL);
             signal (SIGTTIN, SIG_DFL);
             char excmd[SIZE];
@@ -179,7 +182,7 @@ int main()
     {
         perror("shell");
     }
-    getcwd(homedir, FNSIZE);
+    getcwd(homedir, SIZE);
     if(errno < 0)
     {
         perror("shell");
@@ -187,6 +190,7 @@ int main()
     strcpy(olddir, homedir);
     strcpy(absdir, homedir);
     
+    signal (SIGINT, SIG_IGN);
     signal (SIGTTOU, SIG_IGN);
     signal (SIGTTIN, SIG_IGN);
     
@@ -201,19 +205,75 @@ int main()
 
     sh_pgid = getpid();
     tcsetpgrp(STDIN_FILENO, sh_pgid);
+    enableRawMode();
 
     while (1)
     {
         rel(absdir, curdir);
         prompt(un, hn, curdir);
-        // TAKE INPUT HERE
-        char input[SIZE], tinp[SIZE];
-        if(fgets(input, SIZE, stdin) == NULL)
+        char input[SIZE], tinp[SIZE], c;
+        // if(fgets(input, SIZE, stdin) == NULL)
+        // {
+        //     perror("");
+        //     return 0;
+        // }
+        input[0] = '\0';
+        int len = 0;
+        while (read(STDIN_FILENO, &c, 1) == 1)
         {
-            perror("");
-            return 0;
+            if(iscntrl(c))
+            {
+                if(c == 10)
+                {
+                    printf("\n");
+                    fflush(stdout);
+                    input[len] = '\n';
+                    len++;
+                    input[len] = '\0';
+                    len++;
+                    break;
+                }
+                else if(c == 127)
+                {
+                    if(len > 0)
+                    {
+                        printf("\b \b");
+                        fflush(stdout);
+                        len--;
+                        input[len] = '\0';
+                    }
+                }
+                else if(c == 9)
+                {
+                    int stat = 0;
+                    int l2 = autocomp(input, len, &stat);
+                    if(l2 == len && stat != -1)
+                    {
+                        prompt(un, hn, curdir);
+                        for(int i=0; i<len; i++)
+                        {
+                            printf("%c", input[i]);
+                        }
+                        fflush(stdout);
+                        continue;
+                    }
+                    len = l2;
+                }
+                else if(c == 4)
+                {
+                    exit(0);
+                }
+            }
+            else
+            {
+                printf("%c", c);
+                fflush(stdout);
+                input[len] = c;
+                len++;
+            }
         }
-        int j = 0, len = strlen(input);
+        int j = 0;
+        // int len = strlen(input);
         strcpy(tinp, input);
         char * tmptok = strtok(tinp, " \t\n");
         if(tmptok != NULL)
