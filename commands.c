@@ -10,6 +10,8 @@ extern int err;
 extern struct list head;
 extern pid_t sh_pgid;
 extern struct termios term;
+extern char input[SIZE];
+extern int len;
 
 char getstatus(pid_t pid)
 {
@@ -49,7 +51,6 @@ void bgend(int sig, siginfo_t * info, void * ucontext)
     strcpy(cmd, temp->cmd);
     char * command = strtok(cmd, " \t\n");
     int jn = temp->jn;
-    printf("%d\n", info->si_code);
     if(info->si_code == CLD_EXITED)
     {
         strcpy(exstat, "has exited normally.");
@@ -81,6 +82,8 @@ void bgend(int sig, siginfo_t * info, void * ucontext)
     if(sh_pgid == tcgetpgrp(STDIN_FILENO))
     {
         prompt(un, hn, curdir);
+        input[len] = '\0';
+        printf("%s", input);
         fflush(stdout);
     }
     return;

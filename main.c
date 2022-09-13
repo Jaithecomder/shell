@@ -12,7 +12,9 @@ int err = 0;
 time_t ti = 0;
 pid_t sh_pgid;
 struct termios term;
-int zen = 0;
+
+char input[SIZE];
+int len;
 
 struct list head;
 
@@ -104,12 +106,12 @@ void fx(char * str)
                 fprintf(stderr, KRED"shell: command not found: %s\n"RST, command);
                 err = 1;
             }
-            exit(0);
+            exit(EXIT_FAILURE);
         }
         else
         {
             tcsetpgrp(STDIN_FILENO, f);
-            int wstat = -69;
+            int wstat;
             time_t t1, t2;
             t1 = time(NULL);
             waitpid(f, &wstat, WUNTRACED);
@@ -119,6 +121,10 @@ void fx(char * str)
                 insertlist(str1, f, 0);
                 struct list * temp = getproclist(f);
                 printf("\n[%d] %s with pid = %d was stopped.\n", temp->jn, command, f);
+            }
+            if(WEXITSTATUS(wstat) != EXIT_SUCCESS)
+            {
+                err = 1;
             }
             ti = t2 - t1;
             tcsetpgrp(STDIN_FILENO, sh_pgid);
@@ -214,10 +220,10 @@ int main()
     {
         rel(absdir, curdir);
         prompt(un, hn, curdir);
-        char input[SIZE], tinp[SIZE], c;
+        char tinp[SIZE], c;
         enableRawMode();
         input[0] = '\0';
-        int len = 0;
+        len = 0;
         while (read(STDIN_FILENO, &c, 1) == 1)
         {
             if(iscntrl(c))
@@ -307,12 +313,23 @@ int main()
                             pipeline(&input[j]);
                             pl = 0;
                         }
-                        ioredir(&input[j]);
+                        else
+                        {
+                            ioredir(&input[j]);
+                        }
                     }
                     else
                     {
                         input[i] = '\0';
-                        bfx(&input[j]);
+                        if(pl == 1)
+                        {
+                            fprintf(stderr, KRED "pipeline: cannot pipeline in background\n" RST);
+                            err = 1;
+                        }
+                        else
+                        {
+                            bfx(&input[j]);
+                        }
                     }
                     j = i+1;
                     continue;
@@ -326,7 +343,7 @@ int main()
                 pipeline(&input[j]);
                 continue;
             }
-            fx(&input[j]);
+            ioredir(&input[j]);
         }
     }
 }

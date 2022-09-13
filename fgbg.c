@@ -10,6 +10,12 @@ void fg(char * cmd)
 {
     char * command = strtok(cmd, " \t\n");
     char * str1 = strtok(NULL, " \t\n");
+    if(str1 == NULL)
+    {
+        fprintf(stderr, KRED "fg: Job number required\n" RST);
+        err = 1;
+        return;
+    }
     int jn = strtoint(str1);
     if(jn == -1)
     {
@@ -60,6 +66,12 @@ void bg(char * cmd)
 {
     char * command = strtok(cmd, " \t\n");
     char * str1 = strtok(NULL, " \t\n");
+    if(str1 == NULL)
+    {
+        fprintf(stderr, KRED "bg: Job number required\n" RST);
+        err = 1;
+        return;
+    }
     int jn = strtoint(str1);
     if(jn == -1)
     {
