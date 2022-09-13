@@ -60,7 +60,7 @@ void bgend(int sig, siginfo_t * info, void * ucontext);
 char getstatus(pid_t pid);
 
 // bglist
-int insertlist(char * cmd, int pid);
+int insertlist(char * cmd, int pid, int st);
 void deletelist(int pid);
 struct list * getproclist(int pid);
 

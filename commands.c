@@ -49,6 +49,7 @@ void bgend(int sig, siginfo_t * info, void * ucontext)
     strcpy(cmd, temp->cmd);
     char * command = strtok(cmd, " \t\n");
     int jn = temp->jn;
+    printf("%d\n", info->si_code);
     if(info->si_code == CLD_EXITED)
     {
         strcpy(exstat, "has exited normally.");

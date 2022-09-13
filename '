@@ -104,7 +104,7 @@ void fx(char * str)
                 fprintf(stderr, KRED"shell: command not found: %s\n"RST, command);
                 err = 1;
             }
-            exit(0);
+            exit(1);
         }
         else
         {
@@ -113,13 +113,14 @@ void fx(char * str)
             time_t t1, t2;
             t1 = time(NULL);
             waitpid(f, &wstat, WUNTRACED);
-            t2 = time(NULL);
+            printf("%d\n", wstat);
             if(WIFSTOPPED(wstat))
+            {}
+            if(WEXITSTATUS(wstat) != 0)
             {
-                insertlist(str1, f, 0);
-                struct list * temp = getproclist(f);
-                printf("\n[%d] %s with pid = %d was stopped.\n", temp->jn, command, f);
+                err = 1;
             }
+            t2 = time(NULL);
             ti = t2 - t1;
             tcsetpgrp(STDIN_FILENO, sh_pgid);
         }
@@ -159,7 +160,7 @@ void bfx(char * str)
             fprintf(stderr, KRED"\nshell: command not found: %s"RST, command);
             err = 1;
         }
-        exit(0);
+        exit(1);
     }
     else
     {
