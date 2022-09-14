@@ -119,3 +119,4 @@ void pipeline(char * cmd);
 
 // autocomplete
 int autocomp(char * inp, int n, int * stat);
+int seppath(char * inp, char * path, char * fname);

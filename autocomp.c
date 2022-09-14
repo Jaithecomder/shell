@@ -1,7 +1,8 @@
 #include "headers.h"
 
-int seppath(char * inp, int n, char * path, char * fname)
+int seppath(char * inp, char * path, char * fname)
 {
+    int n = strlen(inp);
     for(int i = n-1; i>=0; i--)
     {
         if(inp[i] == '/')
@@ -40,7 +41,7 @@ int autocomp(char * inp, int n, int * stat)
         str = strtok(NULL, " \t\n");
     }
     char path[SIZE], fname[FNSIZE];
-    int  p = seppath(finp, n, path, fname);
+    int  p = seppath(finp, path, fname);
     if(fname[0] == '\0')
     {
         *stat = -1;
