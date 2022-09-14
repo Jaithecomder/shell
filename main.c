@@ -254,8 +254,8 @@ int main()
                 else if(c == 9)
                 {
                     int stat = 0;
-                    int l2 = autocomp(input, len, &stat);
-                    if(l2 == len && stat != -1)
+                    len = autocomp(input, len, &stat);
+                    if(stat != -1)
                     {
                         prompt(un, hn, curdir);
                         for(int i=0; i<len; i++)
@@ -265,10 +265,10 @@ int main()
                         fflush(stdout);
                         continue;
                     }
-                    len = l2;
                 }
                 else if(c == 4)
                 {
+                    disableRawMode();
                     exit(0);
                 }
             }

@@ -24,6 +24,16 @@ int seppath(char * inp, char * path, char * fname)
     return -1;
 }
 
+int findind(char * s1, char * s2)
+{
+    int ci = 0;
+    while(s1[ci] == s2[ci])
+    {
+        ci++;
+    }
+    return ci;
+}
+
 int autocomp(char * inp, int n, int * stat)
 {
     if(inp[n-1] == ' ')
@@ -55,11 +65,13 @@ int autocomp(char * inp, int n, int * stat)
     DIR * directory = opendir(path);
     if(directory == NULL)
     {
+        *stat = -1;
         return n;
     }
     au = readdir(directory);
     int mcount = 0;
     int flength = strlen(fname);
+    int ci = 0, i = 0;
     while(au != NULL)
     {
         if(strncmp(fname, au->d_name, flength) == 0)
@@ -76,6 +88,12 @@ int autocomp(char * inp, int n, int * stat)
                 if(mcount == 2)
                 {
                     printf("\n");
+                    ci = findind(au->d_name, saven);
+                }
+                i = findind(au->d_name, saven);
+                if(i < ci)
+                {
+                    ci = i;
                 }
                 printf("%s\n", saven);
             }
@@ -99,7 +117,12 @@ int autocomp(char * inp, int n, int * stat)
     if(mcount > 1)
     {
         printf("%s\n", saven);
+        inp[n] = '\0';
+        strncat(inp, &saven[flength], i - flength);
+        fflush(stdout);
         *stat = 0;
+        return n + i - flength;
+
     }
     if(mcount == 0)
     {
