@@ -41,6 +41,11 @@ int autocomp(char * inp, int n, int * stat)
     }
     char path[SIZE], fname[FNSIZE];
     int  p = seppath(finp, n, path, fname);
+    if(fname[0] == '\0')
+    {
+        *stat = -1;
+        return n;
+    }
     if(p == -1)
     {
         getcwd(path, SIZE);
