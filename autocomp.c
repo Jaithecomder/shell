@@ -1,24 +1,52 @@
 #include "headers.h"
 
+int seppath(char * inp, int n, char * path, char * fname)
+{
+    for(int i = n-1; i>=0; i--)
+    {
+        if(inp[i] == '/')
+        {
+            if(i == 0)
+            {
+                strcpy(path, "/");
+            }
+            else
+            {
+                inp[i] = '\0';
+                reltoabs(inp, path);
+            }
+            strcpy(fname, &inp[i+1]);
+            return 0;
+        }
+    }
+    strcpy(fname, inp);
+    return -1;
+}
+
 int autocomp(char * inp, int n, int * stat)
 {
-    if(inp[n-1] == ' ' || inp[0] == '\0')
+    if(inp[n-1] == ' ')
     {
         *stat = -1;
         return n;
     }
-    char tinp[SIZE], fname[SIZE], saven[FNSIZE];
+    char tinp[SIZE], finp[SIZE], saven[FNSIZE];
     strncpy(tinp, inp, n);
+    tinp[n] = '\0';
     char * str = strtok(tinp, " \t\n");
     while(str != NULL)
     {
-        strcpy(fname, str);
+        strcpy(finp, str);
         str = strtok(NULL, " \t\n");
     }
-    char cdir[SIZE];
-    getcwd(cdir, SIZE);
+    char path[SIZE], fname[FNSIZE];
+    int  p = seppath(finp, n, path, fname);
+    if(p == -1)
+    {
+        getcwd(path, SIZE);
+    }
     struct dirent * au;
-    DIR * directory = opendir(cdir);
+    DIR * directory = opendir(path);
     if(directory == NULL)
     {
         return n;
@@ -31,7 +59,7 @@ int autocomp(char * inp, int n, int * stat)
         if(strncmp(fname, au->d_name, flength) == 0)
         {
             char spath[SIZE];
-            strcpy(spath, cdir);
+            strcpy(spath, path);
             strcat(spath, "/");
             strcat(spath, au->d_name);
             struct stat temp;
@@ -59,6 +87,7 @@ int autocomp(char * inp, int n, int * stat)
         strcat(inp, &saven[flength]);
         printf("%s", &saven[flength]);
         fflush(stdout);
+        *stat = -1;
         return n + strlen(saven) - flength;
     }
     if(mcount > 1)

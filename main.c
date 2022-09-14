@@ -222,7 +222,10 @@ int main()
         prompt(un, hn, curdir);
         char tinp[SIZE], c;
         enableRawMode();
-        input[0] = '\0';
+        for(int i=0; i<len; i++)
+        {
+            input[i] = '\0';
+        }
         len = 0;
         while (read(STDIN_FILENO, &c, 1) == 1)
         {

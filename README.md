@@ -16,9 +16,10 @@
 - **bg** - to continue a stopped background process
 - Input can be redirected from a file using `<`
 - Output can be redirected to a file using `>` (write) or `>>` (append)
-- Pipeline `|` can be used to redirect output of one command to input of the next command (only with foreground commands)
+- Pipeline `|` can be used to redirect output of one command to input of the next command
 - Multiple commands can be passed in one line separated by `;` or `&`
 - Commands succeeded by `&` will run in background
+- Press Tab to autocomplete with file/directory names
 
 ## Compile Using
 
