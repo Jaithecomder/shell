@@ -1,6 +1,7 @@
 #include "headers.h"
 
 extern int err;
+extern pid_t sh_pgid;
 
 void pipeline(char * cmd)
 {
@@ -36,9 +37,11 @@ void pipeline(char * cmd)
                 return;
             }
             pipe(fd);
-            int f = fork();
+            pid_t f = fork();
             if(f == 0)
             {
+                setpgrp();
+                tcsetpgrp(STDIN_FILENO, getpid());
                 close(fd[0]);
                 dup2(fd[1], STDOUT_FILENO);
                 ioredir(&cmd[j]);
@@ -46,16 +49,18 @@ void pipeline(char * cmd)
                 dup2(oldin, STDIN_FILENO);
                 if(err == 1)
                 {
-                    exit(1);
+                    exit(EXIT_FAILURE);
                 }
-                exit(0);
+                exit(EXIT_SUCCESS);
             }
             else
             {
+                setpgid(f, f);
+                tcsetpgrp(STDIN_FILENO, f);
                 close(fd[1]);
                 int wstat;
                 waitpid(f, &wstat, 0);
-                if(wstat != 0)
+                if(WEXITSTATUS(wstat) != EXIT_SUCCESS)
                 {
                     fprintf(stderr, KRED "shell: Invalid command: %s\n" RST, &cmd[j]);
                     dup2(oldout, STDOUT_FILENO);
@@ -63,6 +68,7 @@ void pipeline(char * cmd)
                     err = 1;
                     return;
                 }
+                tcsetpgrp(STDIN_FILENO, sh_pgid);
                 dup2(fd[0], STDIN_FILENO);
             }
             j = i+1;

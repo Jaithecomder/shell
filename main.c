@@ -82,10 +82,11 @@ void fx(char * str)
     }
     else
     {
-        pid_t f = fork();          // since execve switches to new process and ends current one
+        pid_t f = fork();
         if(f == 0)
         {
             setpgrp();
+            tcsetpgrp(STDIN_FILENO, getpid());
             signal(SIGTSTP, SIG_DFL);
             signal (SIGINT, SIG_DFL);
             signal (SIGTTOU, SIG_DFL);

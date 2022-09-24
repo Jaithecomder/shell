@@ -45,6 +45,11 @@ int autocomp(char * inp, int n, int * stat)
     strncpy(tinp, inp, n);
     tinp[n] = '\0';
     char * str = strtok(tinp, " \t\n");
+    if(str == NULL)
+    {
+        *stat = -1;
+        return n;
+    }
     while(str != NULL)
     {
         strcpy(finp, str);
@@ -109,10 +114,11 @@ int autocomp(char * inp, int n, int * stat)
     {
         inp[n] = '\0';
         strcat(inp, &saven[flength]);
-        printf("%s", &saven[flength]);
+        strcat(inp, " ");
+        printf("%s ", &saven[flength]);
         fflush(stdout);
         *stat = -1;
-        return n + strlen(saven) - flength;
+        return n + strlen(saven) - flength + 1;
     }
     if(mcount > 1)
     {
